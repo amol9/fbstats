@@ -1,8 +1,10 @@
 import logging
 import sys
 import os
+from os.path import join as joinpath
 
-LOG_FILEPATH = os.path.expanduser('~') + '/.cronlogs/fbstats.log'
+from . import globals
+
 
 class Logger():
 
@@ -10,7 +12,7 @@ class Logger():
 		self._log = logging.getLogger('fbstats')
 
 		if job:
-			logfh = logging.FileHandler(LOG_FILEPATH)
+			logfh = logging.FileHandler(joinpath(globals.data_dir, globals.log_filename))
 			logfh.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 			logfh.setLevel(logging.INFO)
 			self._log.addHandler(logfh)
@@ -34,7 +36,7 @@ class Logger():
 		self._log.error(msg)
 
 
-if (sys.argv[1] == 'job'):
+if (len(sys.argv) > 1 and sys.argv[1] == 'job'):
 	log = Logger(True)
 else:
 	log = Logger()

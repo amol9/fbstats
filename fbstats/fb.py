@@ -10,13 +10,15 @@ from subprocess import Popen, PIPE
 from collections import namedtuple
 from os.path import join as joinpath, dirname, realpath, exists, split as splitpath
 
-from graph import Graph
 from logger import log
+from graph import Graph
 from action import Action
 from access import FBAccess, FBAccessException
+from . import globals
 
 
 PlotInfo = namedtuple('PlotInfo', ['query', 'title', 'x'])
+
 
 class FBError(Exception):
 	pass
@@ -24,31 +26,30 @@ class FBError(Exception):
 
 class FB():
 	def __init__(self):
-		dir_path = dirname(realpath(__file__))
-		db_path = joinpath(splitpath(dir_path)[0], 'data', '1.db')
+		db_path = joinpath(globals.data_dir, globals.db_name)
 
-		if not exists(db_path):
-			log.error('db file not found')
-			raise FBError
+		#if not exists(db_path): 	create in db manager if not present
+		#	log.error('db file not found')
+		#	raise FBError
 
 		self._db = DBManager(db_path)
 		self._db.connect()
 
 		self._types = "(type = 46 OR type = 80 OR type = 128 OR type = 247 OR type = 308 OR type = 60)"
-		self._fql_limit = 20
+		self._fql_limit = globals.max_fb_api_calls
 
+		
+	def __del__(self):
+		self._db.disconnect()
+
+
+	def do_fql(self, query):
 		try:
 			fbaccess = FBAccess(self._db)
 			self._access_token = fbaccess.token
 		except FBAccessException as fbae:
 			raise FBError(fbae.message)
 
-
-	def __del__(self):
-		self._db.disconnect()
-
-
-	def do_fql(self, query):
 		if self._fql_limit == 0:
 			log.error('FQL call limit exceeded')
 			raise FBError
@@ -131,7 +132,8 @@ class FB():
 			log.info('deleted friend: %s %s'%(user['first_name'], user['last_name']))
 
 		self._db.commit()
-		
+	
+
 	def get_stream(self, start_time=None, end_time=None, cont=False):
 		def db_insert(jdata):
 			for record in jdata['data']:
@@ -371,12 +373,16 @@ class FB():
 			end_timestamp = (datetime.strptime(end, '%d%b%Y') - datetime(1970, 1, 1)).total_seconds() 
 		else:
 			start_timestamp = self._db.query("SELECT MAX(end_time) FROM job_period")[0][0]
-			end_timestamp = start_timestamp + int(timedelta(days=31).total_seconds())
-			print start_timestamp, end_timestamp
+			if start_timestamp is not None and start_timestamp > time():
+				return
+
+			if start_timestamp is None:
+				start_timestamp = int(time())
+
+			end_timestamp = start_timestamp + int(timedelta(days=globals.job_period_days).total_seconds())
 
 		while start_timestamp < end_timestamp:
 			self._db.insert('job_period', (start_timestamp, start_timestamp + timedelta(hours=12).total_seconds(), 0))
-			print('.'),; sys.stdout.flush()
 			start_timestamp += timedelta(hours=12).total_seconds()
 		self._db.commit()
 
@@ -390,15 +396,7 @@ class FB():
 			self._db.query("UPDATE job_period SET get_count = %d WHERE end_time = %d"%(tp['get_count'] + 1, tp['end_time']))
 			self._db.commit()
 
-	
-	def check_internet(self):
-		ping = Popen(['ping', '-c', '1', 'facebook.com'], stdout=PIPE)
-		log.info(ping.stdout.read())
-		if ping.wait() != 0:
-			router = Popen(['router', 'connect'], stdout=PIPE)
-			log.info(router.stdout.read())			
-
-	
+		
 	def get_timestamp(self, date_string):
 		return (datetime.strptime(date_string, '%d%b%Y') - datetime(1970, 1, 1)).total_seconds()
 

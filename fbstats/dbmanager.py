@@ -1,5 +1,14 @@
 import sqlite3
 from sqlite3 import OperationalError, IntegrityError
+from os.path import exists, join as joinpath, realpath, dirname
+
+
+class DBCreateError(Exception):
+	pass
+
+
+class DBError(Exception):
+	pass
 
 
 class DBManager():
@@ -9,7 +18,8 @@ class DBManager():
 		self.db_filename = db_filename
 
 
-	def create_db(self, script_path):
+	def create_db(self):
+		script_path = joinpath(dirname(realpath(__file__)), 'sql/create_db.sql')
 		self.conn = sqlite3.connect(self.db_filename)
 		script = None
 
@@ -19,6 +29,7 @@ class DBManager():
 			f.close()
 		except IOError:
 			print('error reading script file')
+			raise DBCreateError()
 
 		self.executescript(script)
 		self.commit()
@@ -27,17 +38,16 @@ class DBManager():
 
 	
 	def connect(self):
-		success = False
-	
 		try:
-			#add: a check if file exists
-			self.conn = sqlite3.connect(self.db_filename)
-			success = True
+			print self.db_filename
+			if not exists(self.db_filename):
+				self.create_db()
+			else:
+				self.conn = sqlite3.connect(self.db_filename)
 			self.conn.row_factory = sqlite3.Row
-		except:
-			print 'error connecting to db'
-
-		return success
+		except Exception as e:
+			print e
+			raise DBError('error connecting to db')
 
 
 	def disconnect(self):
@@ -115,7 +125,6 @@ class DBManager():
 		except IntegrityError, ie:
 			print 'Error: ', ie.message
 		self.commit()
-		return
 
 
 	def commit(self):
@@ -123,8 +132,6 @@ class DBManager():
 			self.conn.commit()
 		except:
 			print 'Commit Error'
-
-		return
 
 
 if __name__ == '__main__':

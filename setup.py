@@ -22,7 +22,7 @@ class FBStatsInstall(install):
 	def run(self):
 		install.run(self)
 		dbmgr = DBManager(joinpath(globals.data_dir, globals.db_name))
-		dbmgr.create_db(joinpath(dirname(realpath((__file__))), 'fbstats/sql/create_db.sql'))
+		dbmgr.create_db()
 
 
 setup(	

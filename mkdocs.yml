@@ -1,0 +1,14 @@
+site_name: fbstats
+
+dev_addr: 0.0.0.0:8090
+
+pages:
+- 'index.md'
+- Installation: 'install.md'
+- Basic Usage: 'usage.md'
+- Commands:
+        - change: 'change.md'
+        - like / dislike: 'like_dislike.md'
+- Algorithm: 'algorithm.md'
+- Change Log: 'changelog.md'
+
