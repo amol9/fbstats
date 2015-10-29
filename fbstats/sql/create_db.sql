@@ -75,7 +75,9 @@ CREATE TABLE photo (
 
 CREATE TABLE access (
 	token		text,
-	expiry		integer
+	expiry		integer,
+	client_id	varchar(100),
+	client_secret	varchar(100)
 );
 
 

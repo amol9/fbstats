@@ -32,28 +32,51 @@ class FBAccess():
 		self._expiry = None
 
 
+	def prompt_app_details(self):
+		print('enter app details:')
+		self._client_id = raw_input('app id: ')
+		self._client_secret = raw_input('app secret: ')
+
+		self._db.update('access', {'client_id': self._client_id, 'client_secret': self._client_secret})
+		self._db.commit()
+
+
+	def read_app_details(self):
+		result = self._db.query("SELECT client_id, client_secret FROM access")
+
+		if len(result) == 0 or result[0]['client_id'] == None or result[0]['client_secret'] == None:
+			self.prompt_app_details()
+		else:
+			self._client_id = result[0]['client_id']
+			self._client_secret = result[0]['client_secret']
+
+
 	def get_token(self):
 		if self._token:
 			return self._token
 
 		result = self._db.query("SELECT token, expiry FROM access")
+
 		if len(result) == 0:
-			return self.authenticate()
+			log.error('need to authenticate..')
+			self.authenticate()
 		elif result[0]['expiry'] < int(time()):
 			log.error('token expired, need to authenticate..')
-			return self.authenticate()
+			self.authenticate()
 		else:
 			self._token = result[0]['token']
 			return self._token
 
 	
 	def authenticate(self):
-		print("Need to authenticate the application...")
+		self.read_app_details()
+		print('a browser tab will now open for authenticating the app..')
+
 		sleep(2)
 
-		webbrowser.open_new_tab('https://www.facebook.com/dialog/oauth?client_id=500614936716977&'+
+		webbrowser.open_new_tab('https://www.facebook.com/dialog/oauth?client_id=%s&'+
 					'redirect_uri=http://localhost:8080/&'+
-					'response_type=code&scope=read_stream,user_photos')
+					'response_type=code&scope=read_stream,user_photos'%self._client_id)
 
 		code = self.run_server()
 
@@ -71,9 +94,9 @@ class FBAccess():
 		code = urlparse.parse_qs(path[2:]).get('code', None)
 		
 		try:
-			res = urllib.urlopen('https://graph.facebook.com/oauth/access_token?client_id=500614936716977&'+
+			res = urllib.urlopen('https://graph.facebook.com/oauth/access_token?client_id=%s&'+
 						'redirect_uri=http://localhost:8080/&'+
-						'client_secret=6e3458a3c1512a59b34777b2d4c0dfa1&code=' + code[0])
+						'client_secret=%s&code=%s'%(self._client_id, self._client_secret, code[0]))
 		except Exception as e:
 			print e.message
 

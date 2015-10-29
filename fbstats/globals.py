@@ -7,4 +7,5 @@ db_name 		= 'fbstats.db'
 scheduler_taskname	= 'fbstats_scheduled_task'
 job_period_days		= 10
 log_filename		= 'fbstats.log'
+port			= 9080
 

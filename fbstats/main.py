@@ -106,6 +106,18 @@ def graph(start_date, end_date):
 	fb.render_graph(start=start_date, end=end_date)
 
 
+@subcmd
+def setapp():
+	'Set app id and app secret.'
+
+	db_path = joinpath(globals.data_dir, globals.db_name)
+	db = DBManager(db_path)
+	db.connect()
+
+	fba = FBAccess(db)
+	fba.prompt_app_details()
+	db.disconnect()
+
 
 def check_data_dir():
 	if not exists(globals.data_dir):

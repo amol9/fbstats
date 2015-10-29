@@ -36,7 +36,7 @@ setup(
 	include_package_data	= True,
 	scripts			= ['ez_setup.py'],
 	entry_points 		= entry_points,
-	install_requires	= ['mutils'],
+	install_requires	= ['mutils', 'redcmd'],
 	cmdclass		= FBStatsInstall,
 	classifiers		= [
 					'Development Status :: 4 - Beta',
